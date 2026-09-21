@@ -38,8 +38,8 @@ void main() {
     expect(find.text('Practice'), findsOneWidget);
     expect(find.text('Progress'), findsOneWidget);
     expect(find.byIcon(Icons.home_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.school_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.show_chart_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.calculate_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
   });
 
   testWidgets('Practice switches branch and back (FR-002)', (tester) async {

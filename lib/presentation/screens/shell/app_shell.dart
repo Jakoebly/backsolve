@@ -86,13 +86,13 @@ class _NavBar extends StatelessWidget {
                 onTap: () => onTap(0),
               ),
               _Destination(
-                icon: Icons.school_rounded,
+                icon: Icons.calculate_rounded,
                 label: 'Practice',
                 selected: currentIndex == 1,
                 onTap: () => onTap(1),
               ),
               _Destination(
-                icon: Icons.show_chart_rounded,
+                icon: Icons.trending_up_rounded,
                 label: 'Progress',
                 selected: currentIndex == progressIndex,
                 onTap: () => onTap(progressIndex),
