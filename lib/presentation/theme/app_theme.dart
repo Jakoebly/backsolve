@@ -156,8 +156,20 @@ abstract final class AppSizes {
   static const double cardBorderWidth = 1;
   static const double selectedCardBorderWidth = 2;
 
-  /// practice.png category card 188 × 74 px → ≈ 152 × 60 dp.
-  static const double categoryCardAspectRatio = 2.5;
+  /// The Custom session row's dashed outline (practice.png: 3 px dashes
+  /// with 2 px gaps).
+  static const double dashLength = 3;
+  static const double dashGap = 2;
+
+  /// The height of the Practice category cards. practice.png measures 80 px
+  /// (border to border) → 67 dp; raised a little on request. A minimum: a
+  /// card grows when its text needs more room (large fonts).
+  static const double categoryCardHeight = 74;
+
+  /// The height of the Practice "Custom session" row. Its content (the
+  /// `customIconCircle` plus padding) measures 49 dp; raised with the cards
+  /// so the section keeps its rhythm. Also a minimum.
+  static const double customSessionRowHeight = 56;
 
   /// home.png bar base → W-label row ≈ 35 px.
   static const double chartLabelReserve = 28;
