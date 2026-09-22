@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../navigation/app_routes.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/setup_back_button.dart';
 
 /// Shown by the router for invalid or missing Session Setup query parameters
 /// and as the `errorBuilder` target (contracts/routes.md) — never a crash.
@@ -20,15 +21,17 @@ class UnknownPresetScreen extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  _BackButton(
+                  SetupBackButton(
                     onTap: () => context.canPop()
                         ? context.pop()
                         : context.goNamed(AppRoutes.home),
                   ),
                   const SizedBox(width: AppSpacing.sm),
-                  const Text(
-                    'Unknown session preset',
-                    style: AppTextStyles.pageTitle,
+                  const Expanded(
+                    child: Text(
+                      'Unknown session preset',
+                      style: AppTextStyles.pageTitle,
+                    ),
                   ),
                 ],
               ),
@@ -38,34 +41,6 @@ class UnknownPresetScreen extends StatelessWidget {
                 style: AppTextStyles.subtitle,
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The Session Setup back control (theme-tokens.md §6 "Back button").
-class _BackButton extends StatelessWidget {
-  const _BackButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.backButton,
-      borderRadius: AppRadius.smAll,
-      child: InkWell(
-        borderRadius: AppRadius.smAll,
-        onTap: onTap,
-        child: const SizedBox(
-          width: AppSizes.backButton,
-          height: AppSizes.backButton,
-          child: Icon(
-            Icons.chevron_left,
-            size: AppSizes.iconNav,
-            color: AppColors.primary,
           ),
         ),
       ),
