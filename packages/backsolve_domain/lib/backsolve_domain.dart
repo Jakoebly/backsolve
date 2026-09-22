@@ -26,3 +26,6 @@ export 'src/categories/category_registry.dart';
 export 'src/format/formatters.dart';
 export 'src/stats/calendar.dart';
 export 'src/stats/levels.dart';
+export 'src/stats/home_stats.dart';
+export 'src/stats/streak.dart';
+export 'src/stats/weekly_summary.dart';
