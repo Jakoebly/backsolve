@@ -44,12 +44,19 @@ String settingsChip(SessionConfig c) =>
     '${_answerModeWord(c.answerMode)}';
 
 /// The Difficulty helper line (FR-022).
+///
+/// Both variants are written short enough to render on a **single line**
+/// on a phone (52 and 48 characters ≈ 286 and 256 dp in Roboto 12, against
+/// the ~305 dp a 360 dp-wide screen leaves between the screen padding), so
+/// the block keeps its height whichever difficulty is selected. Keep any
+/// edit within that budget — `formatters_test.dart` guards the length.
 String difficultyHelper(DifficultySetting s) => switch (s) {
   AdaptiveDifficultySetting(:final startLevel) =>
-    'Starts at ${formatLevel(startLevel)}. '
-        'Fast and right moves up, wrong moves down.',
+    'Starts at ${formatLevel(startLevel)}, '
+        'Fast/right moves up, wrong moves down.',
   FixedDifficultySetting(:final level) =>
-    'Every question is at ${formatLevel(level)}.',
+    'Every question is at ${formatLevel(level)}. '
+        'Never moves up or down.',
 };
 
 /// The Answers helper line (FR-023).

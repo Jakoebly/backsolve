@@ -105,15 +105,31 @@ void main() {
     test('adaptive line (FR-022)', () {
       expect(
         difficultyHelper(const AdaptiveDifficultySetting(DifficultyLevel.l3)),
-        'Starts at L3. Fast and right moves up, wrong moves down.',
+        'Starts at L3, Fast/right moves up, wrong moves down.',
       );
     });
 
-    test('fixed line', () {
+    test('fixed line states the level and that it does not move', () {
       expect(
         difficultyHelper(const FixedDifficultySetting(DifficultyLevel.l2)),
-        'Every question is at L2.',
+        'Every question is at L2. Never moves up or down.',
       );
+    });
+
+    test('both variants fit on one line on a phone', () {
+      // Roboto 12 averages ~5.5 dp per character and a 360 dp-wide screen
+      // leaves 320 dp between the screen padding (305 dp at 345 dp wide),
+      // so 52 characters is the budget for a single line. Going over it
+      // makes one variant wrap and the other not, which moves the ANSWERS
+      // section as the user switches difficulty.
+      for (final level in DifficultyLevel.values) {
+        for (final line in [
+          difficultyHelper(AdaptiveDifficultySetting(level)),
+          difficultyHelper(FixedDifficultySetting(level)),
+        ]) {
+          expect(line.length, lessThanOrEqualTo(52), reason: line);
+        }
+      }
     });
   });
 
