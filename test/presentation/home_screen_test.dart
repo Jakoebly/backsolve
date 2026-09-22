@@ -134,6 +134,56 @@ void main() {
     });
   });
 
+  group('drag feels like a scroll even though nothing scrolls', () {
+    testWidgets('the platform overscroll indicator is in place (the Material '
+        '3 stretch on Android)', (tester) async {
+      await onHome(tester, () async {
+        expect(find.byType(StretchingOverscrollIndicator), findsOneWidget);
+      });
+    });
+
+    testWidgets('a drag is accepted and reported as overscroll, and the '
+        'content is back in place afterwards', (tester) async {
+      final overscrolls = <double>[];
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appDatabaseProvider.overrideWithValue(db),
+            clockProvider.overrideWithValue(() => now),
+          ],
+          child: NotificationListener<OverscrollNotification>(
+            onNotification: (notification) {
+              overscrolls.add(notification.overscroll);
+              return false;
+            },
+            child: const BacksolveApp(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final before = tester.getRect(find.text('Backsolve'));
+
+      // Drag down (content pulled past the top) and back up.
+      await tester.drag(find.byType(Scrollable), const Offset(0, 120));
+      await tester.pumpAndSettle();
+      expect(overscrolls.any((value) => value < 0), isTrue, reason: 'leading');
+      expect(tester.getRect(find.text('Backsolve')), before);
+
+      overscrolls.clear();
+      await tester.drag(find.byType(Scrollable), const Offset(0, -120));
+      await tester.pumpAndSettle();
+      expect(overscrolls.any((value) => value > 0), isTrue, reason: 'trailing');
+      expect(tester.getRect(find.text('Backsolve')), before);
+      expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 1));
+    });
+  });
+
   group('fixed, non-scrolling layout', () {
     /// How far the screen can scroll; 0 means everything fits.
     double scrollExtent(WidgetTester tester) => tester

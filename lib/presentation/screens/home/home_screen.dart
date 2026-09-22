@@ -25,6 +25,11 @@ import '../../widgets/weekly_chart.dart';
 /// at its minimum plot, [AppSizes.chartPlotMinHeight]), so a scroll only
 /// exists when the blocks cannot fit at all — landscape, split screen, very
 /// large text.
+///
+/// A drag still *feels* like a scroll: [AlwaysScrollableScrollPhysics]
+/// accepts the gesture even with nothing to scroll, and the platform
+/// overscroll indicator (the Material 3 stretch on Android) stretches the
+/// content and springs it back on release, exactly as on Practice.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -40,34 +45,33 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       body: SafeArea(
         child: LayoutBuilder(
-          builder: (context, constraints) => ScrollConfiguration(
-            // No glow/stretch on drag while everything fits.
-            behavior: ScrollConfiguration.of(
-              context,
-            ).copyWith(overscroll: false),
-            child: SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Padding(
-                    // The bar floats over the body: leave room for it and
-                    // its bottom margin (the gap above it is the column's
-                    // last spacing).
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg,
-                      AppSpacing.lg,
-                      AppSpacing.lg,
-                      AppSizes.navBarHeight + AppSpacing.md,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      // Base gap between blocks; any surplus height left
-                      // once the chart is capped is spread over the gaps.
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      spacing: AppSpacing.sm,
-                      children: _blocks(stats, categories, weeks),
-                    ),
+          builder: (context, constraints) => SingleChildScrollView(
+            // Always accept the drag: with nothing to scroll the clamping
+            // parent keeps the content in place and the overscroll
+            // indicator does the stretching.
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: ClampingScrollPhysics(),
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Padding(
+                  // The bar floats over the body: leave room for it and its
+                  // bottom margin (the gap above it is the column's last
+                  // spacing).
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    AppSizes.navBarHeight + AppSpacing.md,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    // Base gap between blocks; any surplus height left once
+                    // the chart is capped is spread over the gaps.
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    spacing: AppSpacing.sm,
+                    children: _blocks(stats, categories, weeks),
                   ),
                 ),
               ),
