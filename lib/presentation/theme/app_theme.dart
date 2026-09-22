@@ -107,11 +107,20 @@ abstract final class AppSizes {
   static const double appIcon = 52;
   static const double appIconRadius = 14;
 
+  /// White glyph inside the app icon (home.png: ≈ 36 px → 30 dp).
+  static const double appIconGlyph = 30;
+
   /// Home quick start play circle.
   static const double playCircleLg = 48;
 
   /// Practice quick start play circle.
   static const double playCircleSm = 36;
+
+  /// Play glyph inside [playCircleLg] (triangle ≈ 20 px tall in home.png).
+  static const double playIconLg = 28;
+
+  /// Play glyph inside [playCircleSm] (triangle ≈ 15 px tall in practice.png).
+  static const double playIconSm = 20;
   static const double customIconCircle = 32;
   static const double backButton = 32;
   static const double radio = 18;
@@ -152,6 +161,18 @@ abstract final class AppSizes {
 
   /// home.png bar base → W-label row ≈ 35 px.
   static const double chartLabelReserve = 28;
+
+  /// Home never scrolls on a phone: its chart absorbs the screen height,
+  /// growing or shrinking the plot from the mockup's [chartPlotHeight]. The
+  /// plot never goes below this; only when the other blocks plus this
+  /// minimum exceed the viewport (landscape, split screen, very large
+  /// accessibility text) does Home scroll.
+  static const double chartPlotMinHeight = 60;
+
+  /// The plot never grows past this (the mockup's own height); on taller
+  /// phones the remaining height widens the gaps between Home's blocks
+  /// instead.
+  static const double chartPlotMaxHeight = chartPlotHeight;
 }
 
 /// Corner radii in dp (theme-tokens.md §4) plus ready-made [BorderRadius]es.
@@ -190,11 +211,18 @@ abstract final class AppRadius {
 
 /// Text styles (theme-tokens.md §5). The family is the platform default
 /// (`fontFamily: null` — Roboto on Android, SF on iOS).
+///
+/// Line heights: the tokens only fix `helper` (1.4). Flutter's default
+/// Roboto line box is ≈ 1.45 × the size, which made every label → value gap
+/// ~10 dp looser than the mockups; single-line styles therefore use
+/// `height: 1.0` (box = font size, as measured in the images) and the
+/// wrapping body/subtitle styles 1.2.
 abstract final class AppTextStyles {
   /// "Backsolve", "Practice".
   static const TextStyle screenTitle = TextStyle(
     fontSize: 28,
     fontWeight: FontWeight.w700,
+    height: 1.0,
     color: AppColors.ink,
   );
 
@@ -202,6 +230,7 @@ abstract final class AppTextStyles {
   static const TextStyle pageTitle = TextStyle(
     fontSize: 18,
     fontWeight: FontWeight.w600,
+    height: 1.0,
     color: AppColors.ink,
   );
 
@@ -209,6 +238,7 @@ abstract final class AppTextStyles {
   static const TextStyle cardTitle = TextStyle(
     fontSize: 18,
     fontWeight: FontWeight.w600,
+    height: 1.0,
     color: AppColors.ink,
   );
 
@@ -216,6 +246,7 @@ abstract final class AppTextStyles {
   static const TextStyle statValue = TextStyle(
     fontSize: 22,
     fontWeight: FontWeight.w600,
+    height: 1.0,
     color: AppColors.ink,
   );
 
@@ -223,6 +254,7 @@ abstract final class AppTextStyles {
   static const TextStyle categoryName = TextStyle(
     fontSize: 15,
     fontWeight: FontWeight.w600,
+    height: 1.0,
     color: AppColors.ink,
   );
 
@@ -230,6 +262,7 @@ abstract final class AppTextStyles {
   static const TextStyle optionTitle = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w600,
+    height: 1.0,
     color: AppColors.ink,
   );
 
@@ -237,6 +270,7 @@ abstract final class AppTextStyles {
   static const TextStyle optionTitleCompact = TextStyle(
     fontSize: 15,
     fontWeight: FontWeight.w600,
+    height: 1.0,
     color: AppColors.ink,
   );
 
@@ -244,6 +278,7 @@ abstract final class AppTextStyles {
   static const TextStyle body = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w400,
+    height: 1.2,
     color: AppColors.ink,
   );
 
@@ -251,6 +286,7 @@ abstract final class AppTextStyles {
   static const TextStyle subtitle = TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w400,
+    height: 1.2,
     color: AppColors.textSecondary,
   );
 
@@ -266,6 +302,7 @@ abstract final class AppTextStyles {
   static const TextStyle sectionLabel = TextStyle(
     fontSize: 11,
     fontWeight: FontWeight.w600,
+    height: 1.0,
     letterSpacing: 1.5,
     color: AppColors.textSecondary,
   );
@@ -274,6 +311,7 @@ abstract final class AppTextStyles {
   static const TextStyle delta = TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w600,
+    height: 1.0,
     color: AppColors.primary,
   );
 
@@ -281,6 +319,7 @@ abstract final class AppTextStyles {
   static const TextStyle caption = TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w400,
+    height: 1.0,
     color: AppColors.textSecondary,
   );
 
@@ -288,6 +327,7 @@ abstract final class AppTextStyles {
   static const TextStyle chip = TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w600,
+    height: 1.0,
     color: AppColors.ink,
   );
 
@@ -295,30 +335,35 @@ abstract final class AppTextStyles {
   static const TextStyle badge = TextStyle(
     fontSize: 11,
     fontWeight: FontWeight.w600,
+    height: 1.0,
     color: AppColors.ink,
   );
 
   static const TextStyle segmentSelected = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w600,
+    height: 1.0,
     color: AppColors.ink,
   );
 
   static const TextStyle segmentUnselected = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w500,
+    height: 1.0,
     color: AppColors.textSegment,
   );
 
   static const TextStyle navLabelActive = TextStyle(
     fontSize: 11,
     fontWeight: FontWeight.w600,
+    height: 1.0,
     color: AppColors.ink,
   );
 
   static const TextStyle navLabelInactive = TextStyle(
     fontSize: 11,
     fontWeight: FontWeight.w500,
+    height: 1.0,
     color: AppColors.navInactive,
   );
 
@@ -326,6 +371,7 @@ abstract final class AppTextStyles {
   static const TextStyle button = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w700,
+    height: 1.0,
     color: AppColors.onPrimary,
   );
 
@@ -333,6 +379,7 @@ abstract final class AppTextStyles {
   static const TextStyle quickStartSummary = TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w400,
+    height: 1.2,
     color: AppColors.onPrimarySubtle,
   );
 }
