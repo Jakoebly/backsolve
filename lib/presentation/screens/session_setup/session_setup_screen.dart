@@ -7,6 +7,7 @@ import '../../providers/category_providers.dart';
 import '../../providers/session_preset_provider.dart';
 import '../../providers/session_setup_controller.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/category_picker.dart';
 import '../../widgets/coming_soon_sheet.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/section_label.dart';
@@ -16,9 +17,10 @@ import '../../widgets/setup_back_button.dart';
 import 'unknown_preset_screen.dart';
 
 /// Session Setup (`docs/mockups_screens/session_setup.png`, FR-019–FR-023,
-/// FR-025): the back control and the preset's title, then the SESSION TYPE
-/// cards, the DIFFICULTY and ANSWERS controls with their helper lines, and
-/// the Start button pinned below the scrolling body. [kind] and
+/// FR-025): the back control and the preset's title, then — for a custom
+/// session only — the CATEGORIES picker, the SESSION TYPE cards, the
+/// DIFFICULTY and ANSWERS controls with their helper lines, and the Start
+/// button pinned below the scrolling body. [kind] and
 /// [categoryId] come from the route's query parameters; a preset that
 /// cannot be built (unknown category id) shows [UnknownPresetScreen].
 ///
@@ -49,7 +51,7 @@ class SessionSetupScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _Header(preset: loaded),
+                    _Header(preset: loaded, presetKey: presetKey),
                     if (loaded != null) ...[
                       const SizedBox(height: AppSpacing.xl),
                       _Sections(presetKey: presetKey),
@@ -76,19 +78,18 @@ class SessionSetupScreen extends ConsumerWidget {
   }
 }
 
-/// Back control and title, then the covered categories for a preset over
-/// more than one of them (FR-019). Blank while the preset is loading.
+/// Back control and title, then the line listing the categories the
+/// session covers (FR-019). Blank while the preset is loading.
 class _Header extends ConsumerWidget {
-  const _Header({required this.preset});
+  const _Header({required this.preset, required this.presetKey});
 
   final SessionPreset? preset;
+  final PresetKey presetKey;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final preset = this.preset;
-    final names = preset == null || preset.categoryIds.length < 2
-        ? null
-        : _categoryNames(ref, preset.categoryIds);
+    final names = preset == null ? null : _namesLine(ref, preset);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -109,6 +110,23 @@ class _Header extends ConsumerWidget {
     );
   }
 
+  /// The categories the session covers, or `null` to hide the line.
+  ///
+  /// A custom session lists whatever is selected right now and shows
+  /// nothing while the selection is empty (FR-020); every other preset
+  /// lists its fixed set, and hides the line when it covers a single
+  /// category — the title already is that category's name.
+  String? _namesLine(WidgetRef ref, SessionPreset preset) {
+    final custom = preset.kind == PresetKind.custom;
+    final ids = custom
+        ? ref
+              .watch(sessionSetupControllerProvider(presetKey))
+              .selectedCategoryIds
+        : preset.categoryIds;
+    if (ids.length < (custom ? 1 : 2)) return null;
+    return _categoryNames(ref, ids);
+  }
+
   /// The stored names of [ids] in display order, joined by " · ".
   static String _categoryNames(WidgetRef ref, List<String> ids) {
     final categories =
@@ -120,8 +138,8 @@ class _Header extends ConsumerWidget {
   }
 }
 
-/// SESSION TYPE, DIFFICULTY and ANSWERS (FR-021–FR-023), bound to the
-/// preset's controller.
+/// CATEGORIES (custom only), SESSION TYPE, DIFFICULTY and ANSWERS
+/// (FR-020–FR-023), bound to the preset's controller.
 class _Sections extends ConsumerWidget {
   const _Sections({required this.presetKey});
 
@@ -136,6 +154,18 @@ class _Sections extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // A custom session picks its categories here, above everything
+        // else; every other preset arrives with its set fixed (FR-020).
+        if (presetKey.kind == PresetKind.custom) ...[
+          const SectionLabel('Categories'),
+          CategoryPicker(
+            categories:
+                ref.watch(categoriesProvider).value ?? const <Category>[],
+            selectedIds: state.selectedCategoryIds.toSet(),
+            onToggle: controller.toggleCategory,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+        ],
         const SectionLabel('Session type'),
         SessionTypeCard(
           title: 'Timed Session',

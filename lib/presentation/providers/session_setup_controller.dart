@@ -59,8 +59,10 @@ class SessionSetupController extends Notifier<SessionSetupState> {
   final PresetKey key;
 
   /// Timed / adaptive / exact over the preset's categories (spec
-  /// Assumptions "Session Setup defaults"). The preset is read, not
-  /// watched, so a later category update never resets the selections.
+  /// Assumptions "Session Setup defaults") — an empty selection for
+  /// [PresetKind.custom], whose preset covers no category yet (FR-020).
+  /// The preset is read, not watched, so a later category update never
+  /// resets the selections.
   @override
   SessionSetupState build() {
     final preset = ref.read(sessionPresetProvider(key)).value;
@@ -80,6 +82,25 @@ class SessionSetupController extends Notifier<SessionSetupState> {
 
   void setAnswerMode(AnswerMode answerMode) =>
       state = state.copyWith(answerMode: answerMode);
+
+  /// Selects or deselects category [id] (FR-020). The selection is always
+  /// kept in display order, so the started session lists its categories in
+  /// the Practice grid's order (FR-025) whatever order they were tapped in.
+  ///
+  /// An id that is not a stored category cannot be selected; the picker
+  /// only ever offers stored ones.
+  void toggleCategory(String id) {
+    final selected = state.selectedCategoryIds.toSet();
+    // `remove` reports whether it was there, so one call decides both ways.
+    if (!selected.remove(id)) selected.add(id);
+    final categories = ref.read(categoriesProvider).value ?? const [];
+    state = state.copyWith(
+      selectedCategoryIds: [
+        for (final category in categories)
+          if (selected.contains(category.id)) category.id,
+      ],
+    );
+  }
 
   /// The adaptive start level: the rounded mean level of the selected
   /// categories, or the overall level while nothing is selected (FR-022,
