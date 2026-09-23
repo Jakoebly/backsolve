@@ -98,7 +98,14 @@ void main() {
       expect(find.text('Custom session'), findsOneWidget);
       expect(find.text('Pick the categories to include'), findsOneWidget);
       expect(find.byIcon(Icons.checklist_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      // Scoped to the row: the quick start chips carry a chevron too.
+      expect(
+        find.descendant(
+          of: find.byType(CustomSessionRow),
+          matching: find.byIcon(Icons.chevron_right),
+        ),
+        findsOneWidget,
+      );
 
       // The row comes before the grid.
       final row = tester.getRect(find.byType(CustomSessionRow));
@@ -163,6 +170,31 @@ void main() {
           reason: 'card $i',
         );
       }
+    });
+  });
+
+  testWidgets('the last row keeps a gap above the floating bar, however far '
+      'the list is scrolled (user request, 2026-09-23)', (tester) async {
+    await onPractice(tester, () async {
+      final navBar = find.byWidgetPredicate((widget) {
+        if (widget is! Container) return false;
+        final decoration = widget.decoration;
+        return decoration is BoxDecoration &&
+            decoration.color == AppColors.surface &&
+            decoration.borderRadius == AppRadius.lgAll &&
+            decoration.border != null;
+      });
+      final position = tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position;
+      position.jumpTo(position.maxScrollExtent);
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getRect(navBar).top -
+            tester.getRect(find.byType(CategoryCard).last).bottom,
+        AppSpacing.sm,
+      );
     });
   });
 

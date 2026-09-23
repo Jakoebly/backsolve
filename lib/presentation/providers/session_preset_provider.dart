@@ -15,7 +15,13 @@ typedef PresetKey = ({PresetKind kind, String? categoryId});
 /// category id is an [AsyncError] rather than a crash.
 final sessionPresetProvider =
     Provider.family<AsyncValue<SessionPreset>, PresetKey>((ref, key) {
-      final categories = ref.watch(categoriesProvider);
+      // The weak spots preset covers only the three weakest categories
+      // (FR-024); every other kind starts from the whole list. Both carry
+      // the same loading and error states, since the weakest are derived
+      // from the categories.
+      final categories = key.kind == PresetKind.weakest
+          ? ref.watch(weakestCategoriesProvider)
+          : ref.watch(categoriesProvider);
       if (categories.hasError) {
         return AsyncValue.error(categories.error!, categories.stackTrace!);
       }
@@ -27,7 +33,8 @@ final sessionPresetProvider =
       }
     });
 
-/// Builds the preset from [categories] (already in display order).
+/// Builds the preset from [categories] (already in display order) — the
+/// stored categories, or the weakest ones for [PresetKind.weakest].
 SessionPreset _presetFor(PresetKey key, List<Category> categories) {
   switch (key.kind) {
     case PresetKind.category:
@@ -52,13 +59,24 @@ SessionPreset _presetFor(PresetKey key, List<Category> categories) {
         ),
       );
 
+    // Every category, at the user's overall level (FR-035).
     case PresetKind.all:
-      return _mixedPreset(key.kind, 'All categories', categories);
+      return _mixedPreset(
+        key.kind,
+        'All categories',
+        categories,
+        overallLevel(categories),
+      );
 
-    // Temporarily the whole category set; T087 narrows it to the three
-    // weakest categories (FR-024).
+    // The three weakest, at the rounded mean of *their* levels (FR-022,
+    // FR-024).
     case PresetKind.weakest:
-      return _mixedPreset(key.kind, 'Weakest categories', categories);
+      return _mixedPreset(
+        key.kind,
+        'Weakest categories',
+        categories,
+        startLevelFor(categories),
+      );
 
     // No categories yet, so no default configuration (FR-020).
     case PresetKind.custom:
@@ -71,12 +89,12 @@ SessionPreset _presetFor(PresetKey key, List<Category> categories) {
   }
 }
 
-/// A preset over every one of [categories], starting at the overall level
-/// (FR-035).
+/// A preset over all of [categories], starting at [startLevel].
 SessionPreset _mixedPreset(
   PresetKind kind,
   String title,
   List<Category> categories,
+  DifficultyLevel startLevel,
 ) {
   final ids = [for (final category in categories) category.id];
   return SessionPreset(
@@ -85,7 +103,7 @@ SessionPreset _mixedPreset(
     categoryIds: ids,
     defaultConfig: SessionConfig.defaultsFor(
       categoryIds: ids,
-      startLevel: overallLevel(categories),
+      startLevel: startLevel,
       presetKind: kind,
     ),
   );

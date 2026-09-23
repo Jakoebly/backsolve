@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/category_providers.dart';
 import '../../providers/database_providers.dart';
+import '../../providers/session_preset_provider.dart';
 import '../../providers/session_providers.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/coming_soon_sheet.dart';
 import '../../widgets/quick_start_card.dart';
 import '../../widgets/sessions_block.dart';
 import '../../widgets/stat_tile.dart';
@@ -125,16 +127,7 @@ class HomeScreen extends ConsumerWidget {
         allTime: stats?.sessionsAllTime ?? 0,
         dayStreak: stats?.dayStreak ?? 0,
       ),
-      // home.png carries "QUICK START" as the teal card's own overline
-      // (with the bolt glyph) rather than as a label above it.
-      QuickStartCard(
-        overline: 'Quick start',
-        overlineIcon: Icons.bolt_rounded,
-        title: 'Mixed session',
-        subtitle: _mixedSessionSummary(stats, categories),
-        playSize: AppSizes.playCircleLg,
-        onPlay: null, // wired to the quick start in T090
-      ),
+      _MixedSessionCard(summary: _mixedSessionSummary(stats, categories)),
       const SizedBox.shrink(),
     ];
   }
@@ -177,6 +170,51 @@ class HomeScreen extends ConsumerWidget {
         startLevel: stats.overallLevel,
         presetKind: PresetKind.all,
       ),
+    );
+  }
+}
+
+/// The Home quick start card (home.png, FR-011): it carries "QUICK START"
+/// as its own overline (with the bolt glyph) rather than as a label above
+/// it, and its summary line is the stored overall level, so a session
+/// started here is reflected on return (SC-003).
+///
+/// The play control starts a mixed session over every category with the
+/// preset's defaults and then shows the placeholder; dismissing it leaves
+/// the user on Home (FR-014, FR-025). It stays inert until the preset has
+/// loaded, one frame after a cold start (SC-001).
+class _MixedSessionCard extends ConsumerWidget {
+  const _MixedSessionCard({required this.summary});
+
+  /// "60 seconds · adaptive · L4".
+  final String summary;
+
+  Future<void> _start(
+    BuildContext context,
+    WidgetRef ref,
+    SessionPreset preset,
+  ) async {
+    await ref.read(quickStartProvider).start(preset);
+    if (context.mounted) await showComingSoon(context, 'Question answering');
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final preset = ref
+        .watch(
+          sessionPresetProvider((kind: PresetKind.all, categoryId: null)),
+        )
+        .value;
+
+    return QuickStartCard(
+      overline: 'Quick start',
+      overlineIcon: Icons.bolt_rounded,
+      title: 'Mixed session',
+      subtitle: summary,
+      playSize: AppSizes.playCircleLg,
+      onPlay: preset == null || preset.defaultConfig == null
+          ? null
+          : () => _start(context, ref, preset),
     );
   }
 }

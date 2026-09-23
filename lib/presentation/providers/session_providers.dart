@@ -35,3 +35,34 @@ final homeStatsProvider = Provider<AsyncValue<HomeStats>>((ref) {
     return AsyncValue.error(error, stackTrace);
   }
 });
+
+/// Starting a session straight from a quick start card, with no trip
+/// through Session Setup (FR-011, FR-014).
+final class QuickStart {
+  const QuickStart(this._ref);
+
+  final Ref _ref;
+
+  /// Persists an unfinished session with [preset]'s default configuration —
+  /// timed / adaptive / exact over its categories (spec Assumptions "Quick
+  /// start defaults") — and returns it as stored.
+  ///
+  /// Throws an [ArgumentError] for a preset without defaults, which is only
+  /// [PresetKind.custom]: it has no categories yet, so there is nothing to
+  /// start (FR-020).
+  Future<Session> start(SessionPreset preset) {
+    final config = preset.defaultConfig;
+    if (config == null) {
+      throw ArgumentError.value(
+        preset,
+        'preset',
+        'has no default configuration to start',
+      );
+    }
+    return _ref
+        .read(sessionRepositoryProvider)
+        .start(config, startedAt: _ref.read(clockProvider)());
+  }
+}
+
+final quickStartProvider = Provider<QuickStart>(QuickStart.new);

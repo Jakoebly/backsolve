@@ -7,3 +7,11 @@ import 'database_providers.dart';
 final categoriesProvider = StreamProvider<List<Category>>(
   (ref) => ref.watch(categoryRepositoryProvider).watchAll(),
 );
+
+/// The three categories the user is weakest at, in display order (FR-024).
+/// Carries the loading and error states of [categoriesProvider].
+final weakestCategoriesProvider = Provider<AsyncValue<List<Category>>>(
+  (ref) => ref
+      .watch(categoriesProvider)
+      .whenData((categories) => weakestCategories(categories)),
+);
