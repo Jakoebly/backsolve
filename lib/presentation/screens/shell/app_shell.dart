@@ -58,46 +58,56 @@ class _NavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.only(
-          left: AppSpacing.lg,
-          right: AppSpacing.lg,
-          bottom: AppSpacing.md,
-        ),
-        child: Container(
-          height: AppSizes.navBarHeight,
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: AppRadius.lgAll,
-            border: Border.all(
-              color: AppColors.border,
-              width: AppSizes.cardBorderWidth,
-            ),
+    // The bar floats over the body, so scrolled content would otherwise
+    // show through beside and below it. This `background` strip fills the
+    // whole slot — full width, from the top edge of the bar down past the
+    // system inset to the bottom of the screen — and the Scaffold paints
+    // the `bottomNavigationBar` after the body, so content slides under it
+    // and disappears at the bar's top edge. The box takes its size from
+    // the bar below, so it needs no height of its own.
+    return ColoredBox(
+      color: AppColors.background,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.only(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            bottom: AppSpacing.md,
           ),
-          padding: const EdgeInsets.all(_inset),
-          child: Row(
-            children: [
-              _Destination(
-                icon: Icons.home_rounded,
-                label: 'Home',
-                selected: currentIndex == 0,
-                onTap: () => onTap(0),
+          child: Container(
+            height: AppSizes.navBarHeight,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: AppRadius.lgAll,
+              border: Border.all(
+                color: AppColors.border,
+                width: AppSizes.cardBorderWidth,
               ),
-              _Destination(
-                icon: Icons.calculate_rounded,
-                label: 'Practice',
-                selected: currentIndex == 1,
-                onTap: () => onTap(1),
-              ),
-              _Destination(
-                icon: Icons.trending_up_rounded,
-                label: 'Progress',
-                selected: currentIndex == progressIndex,
-                onTap: () => onTap(progressIndex),
-              ),
-            ],
+            ),
+            padding: const EdgeInsets.all(_inset),
+            child: Row(
+              children: [
+                _Destination(
+                  icon: Icons.home_rounded,
+                  label: 'Home',
+                  selected: currentIndex == 0,
+                  onTap: () => onTap(0),
+                ),
+                _Destination(
+                  icon: Icons.calculate_rounded,
+                  label: 'Practice',
+                  selected: currentIndex == 1,
+                  onTap: () => onTap(1),
+                ),
+                _Destination(
+                  icon: Icons.trending_up_rounded,
+                  label: 'Progress',
+                  selected: currentIndex == progressIndex,
+                  onTap: () => onTap(progressIndex),
+                ),
+              ],
+            ),
           ),
         ),
       ),
