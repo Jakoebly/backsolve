@@ -63,7 +63,7 @@ String difficultyHelper(DifficultySetting s) => switch (s) {
 String answerModeHelper(AnswerMode m) => switch (m) {
   AnswerMode.exact => 'Answers must match exactly.',
   AnswerMode.estimation =>
-    'Same session, but anything within ±2% counts. Round the inputs first.',
+    'Answers must match within ±2% of the actual answer.',
 };
 
 String _typeLong(SessionType type) => switch (type) {

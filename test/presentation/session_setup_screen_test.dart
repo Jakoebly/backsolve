@@ -26,12 +26,10 @@ void main() {
     SessionSetupParams.mode: 'category',
     SessionSetupParams.category: 'margins_breakeven',
   };
-  const adaptiveL3 =
-      'Starts at L3, Fast/right moves up, wrong moves down.';
-  const adaptiveL4 =
-      'Starts at L4, Fast/right moves up, wrong moves down.';
+  const adaptiveL3 = 'Starts at L3, Fast/right moves up, wrong moves down.';
+  const adaptiveL4 = 'Starts at L4, Fast/right moves up, wrong moves down.';
   const estimationHelper =
-      'Same session, but anything within ±2% counts. Round the inputs first.';
+      'Answers must match within ±2% of the actual answer.';
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
@@ -93,7 +91,9 @@ void main() {
       .selected;
 
   VoidCallback? startCallback(WidgetTester tester) => tester
-      .widget<PrimaryButton>(find.widgetWithText(PrimaryButton, 'Start Session'))
+      .widget<PrimaryButton>(
+        find.widgetWithText(PrimaryButton, 'Start Session'),
+      )
       .onPressed;
 
   /// Direct database reads run outside the fake-async zone of the test.
@@ -156,7 +156,10 @@ void main() {
       await tester.tap(find.text('L2'));
       await tester.pumpAndSettle();
       expect(selectedDifficulty(tester), DifficultyLevel.l2);
-      expect(find.text('Every question is at L2. Never moves up or down.'), findsOneWidget);
+      expect(
+        find.text('Every question is at L2. Never moves up or down.'),
+        findsOneWidget,
+      );
       expect(find.text(adaptiveL3), findsNothing);
 
       await tester.tap(find.text('Estimation'));
@@ -213,7 +216,10 @@ void main() {
       expect(find.text('Question answering is coming soon'), findsNothing);
       expect(find.byType(SessionSetupScreen), findsOneWidget);
       expect(isSelected(tester, 'Fixed Set'), isTrue);
-      expect(find.text('Every question is at L2. Never moves up or down.'), findsOneWidget);
+      expect(
+        find.text('Every question is at L2. Never moves up or down.'),
+        findsOneWidget,
+      );
       expect(find.text(estimationHelper), findsOneWidget);
       expect(startCallback(tester), isNotNull, reason: 'usable again');
     });
@@ -294,9 +300,7 @@ void main() {
   });
 
   testWidgets('custom mode opens with no categories: Start is disabled and '
-      'the helper shows the overall level (FR-020, edge case)', (
-    tester,
-  ) async {
+      'the helper shows the overall level (FR-020, edge case)', (tester) async {
     await onSetup(tester, {SessionSetupParams.mode: 'custom'}, () async {
       expect(find.text('Custom session'), findsOneWidget);
       expect(find.textContaining(' · '), findsNothing, reason: 'no names');
