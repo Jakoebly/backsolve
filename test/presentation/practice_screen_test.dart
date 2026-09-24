@@ -8,6 +8,8 @@ import 'package:backsolve/presentation/screens/session_setup/session_setup_scree
 import 'package:backsolve/presentation/theme/app_theme.dart';
 import 'package:backsolve/presentation/widgets/category_card.dart';
 import 'package:backsolve/presentation/widgets/custom_session_row.dart';
+import 'package:backsolve/data/repositories/session_repository.dart';
+import 'package:backsolve/presentation/widgets/settings_chip.dart';
 import 'package:backsolve/presentation/widgets/setup_back_button.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -194,6 +196,34 @@ void main() {
         tester.getRect(navBar).top -
             tester.getRect(find.byType(CategoryCard).last).bottom,
         AppSpacing.sm,
+      );
+    });
+  });
+
+  testWidgets('the whole quick start card starts a session, while its chip '
+      'opens Session Setup instead (user request, 2026-09-24)', (tester) async {
+    await onPractice(tester, () async {
+      Future<int> sessions() async =>
+          (await tester.runAsync(() => SessionRepository(db).countAll()))!;
+      final before = await sessions();
+
+      // Anywhere on the card except the chip starts the session.
+      await tester.tap(find.text('All categories'));
+      await tester.pumpAndSettle();
+      expect(find.text('Question answering is coming soon'), findsOneWidget);
+      expect(await sessions(), before + 1);
+      await tester.tap(find.text('Got it'));
+      await tester.pumpAndSettle();
+
+      // The chip sits deeper in the tree, so it wins its own taps: it is
+      // added to the gesture arena first and takes the sweep.
+      await tester.tap(find.byType(SettingsChip).first);
+      await tester.pumpAndSettle();
+      expect(find.text('SESSION TYPE'), findsOneWidget);
+      expect(
+        await sessions(),
+        before + 1,
+        reason: 'the chip must not start a session',
       );
     });
   });

@@ -13,6 +13,13 @@ import 'section_label.dart';
 /// Home passes `title: 'Mixed session'`, the `quickStartSummary(...)` line
 /// and `playSize: AppSizes.playCircleLg`; the Practice variants pass an
 /// overline, a chip and `AppSizes.playCircleSm`.
+///
+/// The **whole card** starts the session, not just the play control (user
+/// request, 2026-09-24). The settings [chip] keeps its own tap: it sits
+/// deeper in the tree, so it is added to the gesture arena first and wins
+/// the sweep — tapping the chip opens Session Setup, tapping anywhere else
+/// on the card starts. A `null` [onPlay] leaves the card inert, which is
+/// what the screens pass while the preset is still loading.
 class QuickStartCard extends StatelessWidget {
   const QuickStartCard({
     super.key,
@@ -84,7 +91,7 @@ class QuickStartCard extends StatelessWidget {
       ],
     );
     return teal
-        ? TealCard(child: content)
-        : AppCard(radius: AppRadius.lg, child: content);
+        ? TealCard(onTap: onPlay, child: content)
+        : AppCard(radius: AppRadius.lg, onTap: onPlay, child: content);
   }
 }

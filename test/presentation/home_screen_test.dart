@@ -68,6 +68,17 @@ void main() {
     }
   }
 
+  testWidgets('the whole quick start card starts a session, not just the '
+      'play control (user request, 2026-09-24)', (tester) async {
+    await onHome(tester, () async {
+      // The title, well clear of the play circle.
+      await tester.tap(find.text('Mixed session'));
+      await tester.pumpAndSettle();
+      // The placeholder only opens once the session has been persisted.
+      expect(find.text('Question answering is coming soon'), findsOneWidget);
+    });
+  });
+
   testWidgets('renders every element of home.png (FR-006, FR-007, FR-010, '
       'FR-011)', (tester) async {
     await onHome(tester, () async {
