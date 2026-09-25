@@ -16,6 +16,7 @@ migrate_working_dir/
 .specify/
 docs/
 specs/
+.claude/
 
 # IntelliJ related
 *.iml
