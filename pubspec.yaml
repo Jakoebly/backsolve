@@ -40,6 +40,24 @@ dev_dependencies:
   drift_dev: ^2.28.0
   build_runner: ^2.4.0
 
+  # Brand asset generation — run only through tool/generate_brand_assets.dart
+  # (it builds the launch tile and repairs iOS files the tools rewrite).
+  # Dev-only; none adds Android/iOS code to the app (Constitution VII, research R-01).
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
+  image: ^4.10.1 # rounded launch tile (R-12); already resolved by both tools
+
+# Launcher icons from assets/brand/ (masters are NOT listed under flutter: assets).
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/brand/backsolve_icon_1024.png"
+  remove_alpha_ios: true
+  min_sdk_android: 24
+  adaptive_icon_background: "#007B82"
+  adaptive_icon_foreground: "assets/brand/backsolve_glyph_1024.png"
+  adaptive_icon_foreground_inset: 16
+
 # The following section is specific to Flutter packages.
 flutter:
   # Ensures the Material Icons font is bundled (the screens use Icons.*).
