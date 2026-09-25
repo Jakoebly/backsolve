@@ -51,7 +51,7 @@ class SessionSetupScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _Header(preset: loaded, presetKey: presetKey),
+                    _Header(preset: loaded),
                     if (loaded != null) ...[
                       const SizedBox(height: AppSpacing.xl),
                       _Sections(presetKey: presetKey),
@@ -81,10 +81,9 @@ class SessionSetupScreen extends ConsumerWidget {
 /// Back control and title, then the line listing the categories the
 /// session covers (FR-019). Blank while the preset is loading.
 class _Header extends ConsumerWidget {
-  const _Header({required this.preset, required this.presetKey});
+  const _Header({required this.preset});
 
   final SessionPreset? preset;
-  final PresetKey presetKey;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -112,19 +111,15 @@ class _Header extends ConsumerWidget {
 
   /// The categories the session covers, or `null` to hide the line.
   ///
-  /// A custom session lists whatever is selected right now and shows
-  /// nothing while the selection is empty (FR-020); every other preset
-  /// lists its fixed set, and hides the line when it covers a single
-  /// category — the title already is that category's name.
+  /// A custom session never shows it (user request, 2026-09-24): the picker
+  /// right below already shows what is selected, and a line that grew with
+  /// the selection pushed the whole grid down a row as the user tapped.
+  /// Every other preset lists its fixed set, and hides the line when it
+  /// covers a single category — the title already is that category's name.
   String? _namesLine(WidgetRef ref, SessionPreset preset) {
-    final custom = preset.kind == PresetKind.custom;
-    final ids = custom
-        ? ref
-              .watch(sessionSetupControllerProvider(presetKey))
-              .selectedCategoryIds
-        : preset.categoryIds;
-    if (ids.length < (custom ? 1 : 2)) return null;
-    return _categoryNames(ref, ids);
+    if (preset.kind == PresetKind.custom) return null;
+    if (preset.categoryIds.length < 2) return null;
+    return _categoryNames(ref, preset.categoryIds);
   }
 
   /// The stored names of [ids] in display order, joined by " · ".

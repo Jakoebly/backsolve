@@ -5,9 +5,10 @@ import '../theme/app_theme.dart';
 import 'app_card.dart';
 
 /// The CATEGORIES picker of a custom session (FR-020, US5 scenario 2): the
-/// stored [categories] as a two-column grid, laid out like the Practice
-/// grid — rows of two, `sm` apart, each row as tall as its taller card, so
-/// a wrapped name grows the row instead of overflowing.
+/// stored [categories] as a two-column grid — rows of two, `xs` apart
+/// (tighter than the Practice grid's `sm`, user request 2026-09-24), each
+/// row as tall as its taller card, so a wrapped name grows the row instead
+/// of overflowing.
 ///
 /// Tapping a card calls [onToggle] with its id; a selected card carries the
 /// 2 dp `primary` border and a filled check circle
@@ -30,14 +31,14 @@ class CategoryPicker extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (var row = 0; row < categories.length; row += 2) ...[
-          if (row > 0) const SizedBox(height: AppSpacing.sm),
+          if (row > 0) const SizedBox(height: AppSpacing.xs),
           IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (final (index, category)
                     in categories.skip(row).take(2).indexed) ...[
-                  if (index > 0) const SizedBox(width: AppSpacing.sm),
+                  if (index > 0) const SizedBox(width: AppSpacing.xs),
                   Expanded(
                     child: _PickerCard(
                       category: category,
@@ -48,7 +49,7 @@ class CategoryPicker extends StatelessWidget {
                 ],
                 // A lone last card keeps its column width.
                 if (categories.length - row == 1) ...[
-                  const SizedBox(width: AppSpacing.sm),
+                  const SizedBox(width: AppSpacing.xs),
                   const Expanded(child: SizedBox.shrink()),
                 ],
               ],
@@ -59,6 +60,17 @@ class CategoryPicker extends StatelessWidget {
     );
   }
 }
+
+/// Names that are broken by hand in the picker, keyed by registry id.
+///
+/// "Fractions to %" is the only stored name narrow enough to fit a card on
+/// one line while the card beside it wraps to two, which left its row
+/// looking lopsided. Breaking it after the first word makes both cards in
+/// that row two lines (user request, 2026-09-24). Everything else wraps on
+/// its own; a name that is not listed here is shown as stored.
+const _forcedLineBreaks = <String, String>{
+  'fractions_percent': 'Fractions\nto %',
+};
 
 /// One cell: the name with the check circle at the trailing edge.
 class _PickerCard extends StatelessWidget {
@@ -83,7 +95,10 @@ class _PickerCard extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Text(category.name, style: AppTextStyles.categoryName),
+              child: Text(
+                _forcedLineBreaks[category.id] ?? category.name,
+                style: AppTextStyles.categoryName,
+              ),
             ),
             const SizedBox(width: AppSpacing.xs),
             _CheckCircle(selected: selected),

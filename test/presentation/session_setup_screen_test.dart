@@ -6,6 +6,7 @@ import 'package:backsolve/presentation/navigation/app_router.dart';
 import 'package:backsolve/presentation/navigation/app_routes.dart';
 import 'package:backsolve/presentation/providers/database_providers.dart';
 import 'package:backsolve/presentation/screens/session_setup/session_setup_screen.dart';
+import 'package:backsolve/presentation/widgets/category_picker.dart';
 import 'package:backsolve/presentation/widgets/primary_button.dart';
 import 'package:backsolve/presentation/widgets/segmented_control.dart';
 import 'package:backsolve/presentation/widgets/session_type_card.dart';
@@ -306,6 +307,42 @@ void main() {
       expect(find.textContaining(' · '), findsNothing, reason: 'no names');
       expect(startCallback(tester), isNull, reason: 'Start disabled');
       expect(find.text(adaptiveL4), findsOneWidget);
+    });
+  });
+
+  testWidgets('selecting categories never moves the picker: custom shows no '
+      'category line (user request, 2026-09-24)', (tester) async {
+    await onSetup(tester, {SessionSetupParams.mode: 'custom'}, () async {
+      final picker = tester.getRect(find.byType(CategoryPicker));
+      final firstCard = tester.getRect(
+        find.descendant(
+          of: find.byType(CategoryPicker),
+          matching: find.text('Percentages'),
+        ),
+      );
+
+      for (final name in ['Percentages', 'Growth & CAGR', 'Estimation']) {
+        await tester.tap(
+          find.descendant(
+            of: find.byType(CategoryPicker),
+            matching: find.text(name),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      // A line listing the selection would push the whole grid down a row.
+      expect(find.textContaining(' · '), findsNothing);
+      expect(tester.getRect(find.byType(CategoryPicker)), picker);
+      expect(
+        tester.getRect(
+          find.descendant(
+            of: find.byType(CategoryPicker),
+            matching: find.text('Percentages'),
+          ),
+        ),
+        firstCard,
+      );
     });
   });
 
