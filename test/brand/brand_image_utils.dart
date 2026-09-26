@@ -11,6 +11,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:backsolve/presentation/theme/app_theme.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // Paths are relative to the package root, the working directory under
@@ -232,20 +233,42 @@ double farthestOpaqueRadius(
   return farthest;
 }
 
+/// The half-open bounding box of the pixels with alpha ≥ [threshold], or
+/// null if there are none.
+({int left, int top, int right, int bottom})? _opaqueBounds(
+  Rgba img, {
+  int threshold = 128,
+}) {
+  var left = img.width, top = img.height, right = 0, bottom = 0;
+  for (var y = 0; y < img.height; y++) {
+    for (var x = 0; x < img.width; x++) {
+      if (img.at(x, y, 3) < threshold) continue;
+      if (x < left) left = x;
+      if (y < top) top = y;
+      if (x >= right) right = x + 1;
+      if (y >= bottom) bottom = y + 1;
+    }
+  }
+  if (right == 0) return null;
+  return (left: left, top: top, right: right, bottom: bottom);
+}
+
 /// The width of the bounding box of the pixels with alpha ≥ [threshold]
 /// (0 if there are none).
 int opaqueSpan(Rgba img, {int threshold = 128}) {
-  var minX = img.width;
-  var maxX = -1;
-  for (var y = 0; y < img.height; y++) {
-    for (var x = 0; x < img.width; x++) {
-      if (img.at(x, y, 3) >= threshold) {
-        minX = min(minX, x);
-        maxX = max(maxX, x);
-      }
-    }
+  final box = _opaqueBounds(img, threshold: threshold);
+  return box == null ? 0 : box.right - box.left;
+}
+
+/// The [size] × [size] square of [img] whose top-left pixel is
+/// ([left], [top]).
+Rgba _crop(Rgba img, int left, int top, int size) {
+  final bytes = Uint8List(size * size * 4);
+  for (var y = 0; y < size; y++) {
+    final from = ((top + y) * img.width + left) * 4;
+    bytes.setRange(y * size * 4, (y + 1) * size * 4, img.bytes, from);
   }
-  return maxX < minX ? 0 : maxX - minX + 1;
+  return Rgba(size, size, bytes);
 }
 
 /// A colour component (0–1, as in [ui.Color.r]) as an 8-bit value.
@@ -276,6 +299,115 @@ void expectPixelNear(
           'expected $want ± $tolerance',
     );
   }
+}
+
+/// Expects [img], a launch image, to be derived from the launch tile
+/// (data-model §3.1 and §4 "Derived from tile"): the icon master scaled to a
+/// third of the canvas, its corners rounded like the Home logo tile, centred
+/// on transparency and inside Android 12's circular mask. Failure messages
+/// name [path].
+void expectLaunchTile(Rgba img, Rgba iconMaster, {required String path}) {
+  final c = img.width;
+  final t = c ~/ 3;
+  expect([img.height, t * 3], [c, c], reason: '$path: a square of 3 tiles');
+  final r = t * AppSizes.appIconRadius / AppSizes.appIcon;
+
+  // 1. Nothing is visible outside the centred t × t square.
+  var outside = 0;
+  for (var y = 0; y < c; y++) {
+    for (var x = 0; x < c; x++) {
+      final inTile = x >= t && x < 2 * t && y >= t && y < 2 * t;
+      if (!inTile && img.at(x, y, 3) != 0) outside++;
+    }
+  }
+  expect(outside, 0, reason: '$path: visible pixels outside [$t, ${2 * t})²');
+
+  // 2. The tile is t ± 1 px wide and high, centred within ± 1 px.
+  final box = _opaqueBounds(img);
+  if (box == null) fail('$path has no pixel with alpha ≥ 128');
+  for (final (axis, from, to) in [
+    ('x', box.left, box.right),
+    ('y', box.top, box.bottom),
+  ]) {
+    expect(
+      to - from,
+      inInclusiveRange(t - 1, t + 1),
+      reason: '$path: tile spans [$from, $to) in $axis, expected $t ± 1 px',
+    );
+    expect(
+      ((from + to) / 2 - c / 2).abs(),
+      lessThanOrEqualTo(1),
+      reason: '$path: tile centre ${(from + to) / 2} in $axis, not ${c / 2}',
+    );
+  }
+
+  // 3. Between the corner arcs the tile is opaque and is the icon master.
+  final lo = (t + r).ceil();
+  final hi = (2 * t - r).floor();
+  var translucent = 0;
+  for (var y = lo; y < hi; y++) {
+    for (var x = lo; x < hi; x++) {
+      if (img.at(x, y, 3) != 255) translucent++;
+    }
+  }
+  expect(translucent, 0, reason: '$path: translucent pixels in [$lo, $hi)²');
+  final diff = meanAbsDiff(
+    _crop(img, t, t, t),
+    boxDownscale(iconMaster, t),
+    channels: const [0, 1, 2],
+    left: lo - t,
+    top: lo - t,
+    right: hi - t,
+    bottom: hi - t,
+  );
+  expect(
+    diff,
+    lessThanOrEqualTo(kDerivedMeanTolerance),
+    reason:
+        '$path: RGB mean |Δ| ${diff.toStringAsFixed(2)} against the '
+        'downscaled icon master in [$lo, $hi)²',
+  );
+
+  // 4. Each corner has the Home logo's radius: the transparent area of the
+  // ⌈r⌉ × ⌈r⌉ square at a corner is r²(1 − π/4); the pixels beyond r in
+  // that square are opaque and add nothing.
+  final n = r.ceil();
+  for (final (corner, x0, y0) in [
+    ('top-left', t, t),
+    ('top-right', 2 * t - n, t),
+    ('bottom-left', t, 2 * t - n),
+    ('bottom-right', 2 * t - n, 2 * t - n),
+  ]) {
+    var clear = 0.0;
+    for (var y = y0; y < y0 + n; y++) {
+      for (var x = x0; x < x0 + n; x++) {
+        clear += 1 - img.at(x, y, 3) / 255;
+      }
+    }
+    final radius = sqrt(clear / (1 - pi / 4));
+    expect(
+      (radius - r).abs(),
+      lessThanOrEqualTo(c / 288),
+      reason:
+          '$path: $corner corner radius ${radius.toStringAsFixed(2)} px, '
+          'expected ${r.toStringAsFixed(2)} ± ${c / 288}',
+    );
+  }
+
+  // 5. Inside Android 12's circular mask, a radius of a third of the canvas.
+  final farthest = farthestOpaqueRadius(
+    img,
+    canvas: c.toDouble(),
+    originX: 0,
+    originY: 0,
+  );
+  expect(
+    farthest,
+    lessThanOrEqualTo(c / 3),
+    reason:
+        '$path: farthest visible pixel ${farthest.toStringAsFixed(1)} px '
+        'from the centre, mask radius ${c / 3} px',
+  );
 }
 
 /// Every PNG below [dir], as `folder/name.png` paths relative to [dir]
