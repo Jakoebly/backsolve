@@ -7,6 +7,7 @@ import '../../providers/database_providers.dart';
 import '../../providers/session_preset_provider.dart';
 import '../../providers/session_providers.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_logo.dart';
 import '../../widgets/coming_soon_sheet.dart';
 import '../../widgets/quick_start_card.dart';
 import '../../widgets/sessions_block.dart';
@@ -225,23 +226,11 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return const Row(
       children: [
-        Container(
-          width: AppSizes.appIcon,
-          height: AppSizes.appIcon,
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(AppSizes.appIconRadius),
-          ),
-          child: const Icon(
-            Icons.grid_view_rounded,
-            size: AppSizes.appIconGlyph,
-            color: AppColors.onPrimary,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        const Expanded(
+        AppLogo(),
+        SizedBox(width: AppSpacing.md),
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
