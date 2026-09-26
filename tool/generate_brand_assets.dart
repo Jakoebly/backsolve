@@ -1,7 +1,9 @@
 /// Regenerates every derived brand asset (the Android and iOS launcher icons
 /// and launch screens) from the two masters in `assets/brand/`, and repairs
 /// what the generators get wrong
-/// (specs/002-app-icon-launch-screen/contracts/brand-assets.md §2).
+/// (specs/002-app-icon-launch-screen/contracts/brand-assets.md §2). It first
+/// builds the launch tile, the icon master with rounded corners, because
+/// neither generator can round corners.
 ///
 /// From the repo root, after `flutter pub get`:
 ///
@@ -17,13 +19,47 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
-/// The two masters (FR-001).
+import 'package:image/image.dart' as img;
+
+/// The launch tile's side in dp (pt on iOS) on every platform, the one
+/// adjustable value (research R-05). Step 2 refuses sizes whose corners
+/// would cross Android 12's circular mask (above about 161).
+const tileDp = 96;
+
+/// The launch image's side in px. Android 12+ shows it in its 288 dp icon
+/// view, and the splash tool treats it as @4x (a 288 dp/pt canvas) for
+/// Android before 12 and iOS, so the tile has the same size everywhere
+/// (FR-017).
+const canvasPx = 1152;
+
+/// The tile's corner radius over its side. Mirrors `AppSizes.appIconRadius /
+/// AppSizes.appIcon` (14/52), the Home logo tile; the brand tests enforce it.
+const tileRadiusRatio = 14 / 52;
+
+/// The launch background, #034A4A (spec Clarifications 2026-09-25), which
+/// the `flutter_native_splash:` config in pubspec.yaml also sets. Step 7
+/// writes it into the iOS storyboard.
+const launchBackgroundHex = '034A4A';
+
+/// The two masters (FR-001). The first is the icon master.
 const _masters = [
   'assets/brand/backsolve_icon_1024.png',
   'assets/brand/backsolve_glyph_1024.png',
 ];
 
+/// The launch tile image the splash tool reads (see pubspec.yaml). It is
+/// rebuilt on every run; `build/` is gitignored.
+const _launchTile = 'build/brand/launch_tile.png';
+
 const _appIconSet = 'ios/Runner/Assets.xcassets/AppIcon.appiconset';
+const _storyboard = 'ios/Runner/Base.lproj/LaunchScreen.storyboard';
+
+/// The storyboard root view's background, [launchBackgroundHex] in sRGB,
+/// verbatim from contracts/brand-assets.md §2 (step 7).
+const _storyboardBackground =
+    '<color key="backgroundColor" red="0.011764705882352941" '
+    'green="0.29019607843137257" blue="0.29019607843137257" alpha="1" '
+    'colorSpace="custom" customColorSpace="sRGB"/>';
 
 /// Files the generators rewrite although the spec requires them unchanged
 /// (data-model §5). Their bytes are restored after the generators run.
@@ -37,15 +73,20 @@ const _guardedFiles = [
 /// The generators, in order, each run as `dart run <args>`.
 const List<List<String>> _generators = [
   ['flutter_launcher_icons'],
+  ['flutter_native_splash:create'],
 ];
 
 Future<void> main() async {
   if (!File('pubspec.yaml').existsSync()) _fail('run from the repo root');
+  _checkStoryboardBackground();
 
   // Step 1: both masters exist.
   for (final master in _masters) {
     if (!File(master).existsSync()) _fail('missing master $master');
   }
+
+  // Step 2: the launch tile, before the splash tool needs it.
+  _buildLaunchTile();
 
   // Step 3: snapshot the guarded files.
   final guarded = <String, List<int>>{};
@@ -84,11 +125,94 @@ Future<void> main() async {
     }
   }
 
+  // Step 7: the splash tool rewrites the storyboard from its template on
+  // every run and leaves the view's own background white (research R-04).
+  // Anything but exactly one colour element means the template changed.
+  final storyboard = File(_storyboard).readAsStringSync();
+  final background = RegExp(r'<color key="backgroundColor"[^>]*/>');
+  final colours = background.allMatches(storyboard).length;
+  if (colours != 1) {
+    _fail('$_storyboard has $colours backgroundColor elements, expected 1');
+  }
+  File(_storyboard).writeAsStringSync(
+    storyboard.replaceFirst(background, _storyboardBackground),
+  );
+
   // Step 8.
   stdout.writeln(
     'Brand assets regenerated. Verify with: flutter test test/brand',
   );
 }
+
+/// Fails unless [_storyboardBackground]'s components, × 255 and rounded,
+/// are the bytes of [launchBackgroundHex], so the two cannot drift apart.
+void _checkStoryboardBackground() {
+  int byte(String component) {
+    final value = RegExp(
+      '$component="([^"]+)"',
+    ).firstMatch(_storyboardBackground)!.group(1)!;
+    return (double.parse(value) * 255).round();
+  }
+
+  final rgb = byte('red') << 16 | byte('green') << 8 | byte('blue');
+  if (rgb != int.parse(launchBackgroundHex, radix: 16)) {
+    _fail('the storyboard colour is not #$launchBackgroundHex');
+  }
+}
+
+/// Step 2 (research R-12): the icon master scaled to `tileDp × 4` px, its
+/// corners rounded like the Home logo tile with 4 × 4 supersampled coverage,
+/// centred on a transparent `canvasPx` square and written to [_launchTile].
+/// The pixels are copied, not composited, so their straight alpha is exact.
+void _buildLaunchTile() {
+  const tilePx = tileDp * 4;
+  if (tilePx > canvasPx * 0.56) {
+    _fail('tileDp $tileDp is too large: the tile would cross the mask');
+  }
+  final master = img.decodePng(File(_masters.first).readAsBytesSync());
+  if (master == null) _fail('cannot decode ${_masters.first}');
+  final tile = img.copyResize(
+    master,
+    width: tilePx,
+    height: tilePx,
+    interpolation: img.Interpolation.average,
+  );
+
+  const radius = tilePx * tileRadiusRatio;
+  const offset = (canvasPx - tilePx) ~/ 2;
+  // A fresh image is all zero, i.e. transparent.
+  final canvas = img.Image(width: canvasPx, height: canvasPx, numChannels: 4);
+  for (var y = 0; y < tilePx; y++) {
+    for (var x = 0; x < tilePx; x++) {
+      // A sample is inside when it lies within `radius` of the inner
+      // square [radius, tilePx − radius]².
+      var covered = 0;
+      for (var j = 0; j < 4; j++) {
+        for (var i = 0; i < 4; i++) {
+          final dx = _outside(x + (i + 0.5) / 4, radius, tilePx - radius);
+          final dy = _outside(y + (j + 0.5) / 4, radius, tilePx - radius);
+          if (dx * dx + dy * dy <= radius * radius) covered++;
+        }
+      }
+      if (covered == 0) continue;
+      final p = tile.getPixel(x, y);
+      canvas.setPixelRgba(
+        offset + x,
+        offset + y,
+        p.r,
+        p.g,
+        p.b,
+        (p.a * covered / 16).round(),
+      );
+    }
+  }
+  Directory('build/brand').createSync(recursive: true);
+  File(_launchTile).writeAsBytesSync(img.encodePng(canvas));
+}
+
+/// How far [v] lies outside [lo, hi]; 0 inside.
+double _outside(double v, double lo, double hi) =>
+    v < lo ? lo - v : (v > hi ? v - hi : 0);
 
 /// Runs `dart run <args>` with the Dart running this script, without a
 /// shell, streaming the tool's output to the console. Returns its exit code.

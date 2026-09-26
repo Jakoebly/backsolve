@@ -58,6 +58,16 @@ flutter_launcher_icons:
   adaptive_icon_foreground: "assets/brand/backsolve_glyph_1024.png"
   adaptive_icon_foreground_inset: 16
 
+# Launch screens: the rounded app-icon tile on #034A4A. The tile image is built
+# by the wrapper into build/ (gitignored) right before this runs. No *_dark keys
+# (dark falls back to these values) and no icon_background_color (R-04).
+flutter_native_splash:
+  color: "#034A4A"
+  image: build/brand/launch_tile.png
+  android_12:
+    image: build/brand/launch_tile.png
+  web: false
+
 # The following section is specific to Flutter packages.
 flutter:
   # Ensures the Material Icons font is bundled (the screens use Icons.*).
