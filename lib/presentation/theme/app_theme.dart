@@ -24,6 +24,11 @@ abstract final class AppColors {
   /// Play circle on a teal card (= white 22 % over primary).
   static const Color onPrimaryCircle = Color(0xFF38989D);
 
+  /// Bottom-right square of the brand mark: white at 42 % (107/255) over
+  /// [primary], exactly as measured in the opaque master (#6BB2B6).
+  /// Feature 002, contracts/theme-tokens.md.
+  static const Color mutedTeal = Color(0xFF6BB2B6);
+
   /// Screen background; also the Level/time badge fill.
   static const Color background = Color(0xFFF7F8FA);
 
@@ -107,8 +112,11 @@ abstract final class AppSizes {
   static const double appIcon = 52;
   static const double appIconRadius = 14;
 
-  /// White glyph inside the app icon (home.png: ≈ 36 px → 30 dp).
-  static const double appIconGlyph = 30;
+  /// The brand mark inside [appIcon], scaled from the 1024 px master
+  /// (squares 195 px, gap 88 px, corner radius 46 px; the mark is centred).
+  static const double appIconMarkSquare = appIcon * 195 / 1024; // 9.902
+  static const double appIconMarkGap = appIcon * 88 / 1024; // 4.469
+  static const double appIconMarkRadius = appIcon * 46 / 1024; // 2.336
 
   /// Home quick start play circle.
   static const double playCircleLg = 48;

@@ -4,6 +4,7 @@ import 'package:backsolve/data/seed/seeder.dart';
 import 'package:backsolve/presentation/providers/database_providers.dart';
 import 'package:backsolve/presentation/screens/shell/app_shell.dart';
 import 'package:backsolve/presentation/theme/app_theme.dart';
+import 'package:backsolve/presentation/widgets/app_logo.dart';
 import 'package:backsolve/presentation/widgets/quick_start_card.dart';
 import 'package:backsolve/presentation/widgets/sessions_block.dart';
 import 'package:backsolve/presentation/widgets/stat_tile.dart';
@@ -84,7 +85,7 @@ void main() {
     await onHome(tester, () async {
       expect(find.text('Backsolve'), findsOneWidget);
       expect(find.text('Mental math for case interviews'), findsOneWidget);
-      expect(find.byIcon(Icons.grid_view_rounded), findsOneWidget);
+      expect(find.byType(AppLogo), findsOneWidget);
 
       expect(find.text('LAST 8 WEEKS'), findsOneWidget);
       expect(find.byType(WeeklyChart), findsOneWidget);
@@ -112,6 +113,30 @@ void main() {
       expect(find.text('Home'), findsOneWidget);
       expect(find.text('Practice'), findsOneWidget);
       expect(find.text('Progress'), findsOneWidget);
+    });
+  });
+
+  /// The header's geometry, recorded on the pre-logo `Icon` header (T025) and
+  /// unchanged once [AppLogo] replaced it (T030, brand-checks §7.2). The
+  /// rects are hard-coded on purpose: they are the proof of FR-021.
+  testWidgets('the header keeps its geometry (FR-021)', (tester) async {
+    await onHome(tester, () async {
+      final tile = tester.getRect(find.byType(AppLogo));
+      final title = tester.getRect(find.text('Backsolve'));
+      final tagline = tester.getRect(
+        find.text('Mental math for case interviews'),
+      );
+      expect(tile, const Rect.fromLTRB(20, 40, 72, 92), reason: 'logo tile');
+      expect(
+        title,
+        const Rect.fromLTRB(88, 20, 340, 76),
+        reason: "'Backsolve'",
+      );
+      expect(
+        tagline,
+        const Rect.fromLTRB(88, 84, 340, 112),
+        reason: 'tagline',
+      );
     });
   });
 
